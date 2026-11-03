@@ -1,9 +1,11 @@
 package com.worklog;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,8 +18,11 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.containers.PostgreSQLContainer;
+
+import jakarta.servlet.http.Cookie;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -80,5 +85,13 @@ public abstract class IntegrationTest {
     void resetState() {
         clock.set(DEFAULT_NOW);
         jdbc.execute("truncate table day_entries, day_logs, work_items, users, teams restart identity cascade");
+    }
+
+    /** 가입 후 로그인 쿠키를 돌려준다. 비밀번호는 항상 password123. */
+    protected Cookie login(String email) throws Exception {
+        String body = "{\"email\":\"" + email + "\",\"password\":\"password123\",\"name\":\"테스터\"}";
+        return mvc.perform(post("/api/auth/signup").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getCookie("WL_TOKEN");
     }
 }
