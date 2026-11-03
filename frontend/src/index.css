@@ -1,0 +1,26 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-ink: #0c1821;
+  --color-prussian: #1b2a41;
+  --color-charcoal: #324a5f;
+  --color-canvas: #f4f6f8;
+  --color-line: rgb(12 24 33 / 0.08);
+  --color-mute: #6b7a89;
+  --font-sans: 'Pretendard Variable', Pretendard, -apple-system, 'Segoe UI', sans-serif;
+}
+
+body {
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
