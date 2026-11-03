@@ -1,0 +1,8 @@
+.superpowers/
+node_modules/
+build/
+.gradle/
+dist/
+.env
+*.class
+.idea/
