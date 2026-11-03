@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/worklog}
+    username: ${DB_USER:worklog}
+    password: ${DB_PASSWORD:worklog}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: Asia/Seoul
+  jackson:
+    time-zone: Asia/Seoul
+
+worklog:
+  jwt:
+    secret: ${JWT_SECRET:dev-secret-at-least-32-bytes-long-xxxxxxxx}
+  signup-enabled: ${SIGNUP_ENABLED:true}
