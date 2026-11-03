@@ -10,6 +10,32 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U worklog -d worklog"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build: ./backend
+    environment:
+      TZ: Asia/Seoul
+      DB_URL: jdbc:postgresql://postgres:5432/worklog
+      DB_USER: worklog
+      DB_PASSWORD: worklog
+      # 로컬 실행용 기본값. 외부에 공개할 때는 반드시 바꾸세요(32바이트 이상).
+      JWT_SECRET: ${JWT_SECRET:-local-only-secret-change-me-before-deploying-0000}
+      SIGNUP_ENABLED: ${SIGNUP_ENABLED:-true}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8081:80"
+    depends_on:
+      - backend
 
 volumes:
   pgdata:
