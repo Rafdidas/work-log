@@ -23,8 +23,9 @@ function useAfterDayChange(date: string) {
   const queryClient = useQueryClient()
   return (view: DayView) => {
     queryClient.setQueryData(['day', date], view)
-    queryClient.invalidateQueries({ queryKey: ['days'] })
-    queryClient.invalidateQueries({ queryKey: ['work-items'] })
+    for (const key of ['days', 'work-items', 'weekly', 'effort', 'monthly']) {
+      queryClient.invalidateQueries({ queryKey: [key] })
+    }
   }
 }
 
