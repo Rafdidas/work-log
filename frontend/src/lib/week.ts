@@ -45,6 +45,25 @@ export function formatDayTitle(iso: string): string {
   return `${d.getUTCMonth() + 1}월 ${d.getUTCDate()}일 ${WEEKDAYS_KO[d.getUTCDay()]}요일`
 }
 
+const WEEKDAY_ENUM_KO: Record<string, string> = {
+  MONDAY: '월',
+  TUESDAY: '화',
+  WEDNESDAY: '수',
+  THURSDAY: '목',
+  FRIDAY: '금',
+  SATURDAY: '토',
+  SUNDAY: '일',
+}
+
+export function weekdayEnumKo(day: string): string {
+  return WEEKDAY_ENUM_KO[day] ?? day
+}
+
+/** 서버 보고서와 같은 표기: 다섯 요일이면 "월~금", 아니면 "월·화·수". */
+export function formatDays(days: string[]): string {
+  return days.length === 5 ? '월~금' : days.map(weekdayEnumKo).join('·')
+}
+
 /** 예: "11월 2일" */
 export function formatMonthDay(iso: string): string {
   const d = parse(iso)
