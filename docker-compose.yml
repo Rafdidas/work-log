@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: worklog
       TZ: Asia/Seoul
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -23,8 +23,8 @@ services:
       DB_URL: jdbc:postgresql://postgres:5432/worklog
       DB_USER: worklog
       DB_PASSWORD: worklog
-      # 로컬 실행용 기본값. 외부에 공개할 때는 반드시 바꾸세요(32바이트 이상).
-      JWT_SECRET: ${JWT_SECRET:-local-only-secret-change-me-before-deploying-0000}
+      # 비워 두면 실행할 때마다 무작위 키를 만들어요(재시작하면 로그인이 풀림). 유지하려면 32바이트 이상으로 지정하세요.
+      JWT_SECRET: ${JWT_SECRET:-}
       SIGNUP_ENABLED: ${SIGNUP_ENABLED:-true}
     depends_on:
       postgres:
@@ -33,7 +33,7 @@ services:
   frontend:
     build: ./frontend
     ports:
-      - "8081:80"
+      - "127.0.0.1:8081:80"
     depends_on:
       - backend
 

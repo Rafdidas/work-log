@@ -38,7 +38,7 @@ export function ItemForm({ initial, tags, pending, error, onCreate, onUpdate, on
         recurring,
         showInPlan,
         ...(startedAt && { startedAt }),
-        ...(completedAt && { completedAt }),
+        ...(initial.status === 'DONE' && completedAt && { completedAt }),
       })
     } else {
       onCreate({ title: title.trim(), ...(trimmedTag && { tag: trimmedTag }), recurring, showInPlan, status })
@@ -88,10 +88,12 @@ export function ItemForm({ initial, tags, pending, error, onCreate, onUpdate, on
               시작일
               <input type="date" className={`${inputClass} mt-1`} value={startedAt} onChange={(e) => setStartedAt(e.target.value)} />
             </label>
-            <label className="text-[13px] text-charcoal">
-              완료일
-              <input type="date" className={`${inputClass} mt-1`} value={completedAt} onChange={(e) => setCompletedAt(e.target.value)} />
-            </label>
+            {initial.status === 'DONE' && (
+              <label className="text-[13px] text-charcoal">
+                완료일
+                <input type="date" className={`${inputClass} mt-1`} value={completedAt} onChange={(e) => setCompletedAt(e.target.value)} />
+              </label>
+            )}
           </div>
         ) : (
           <SegmentedTabs

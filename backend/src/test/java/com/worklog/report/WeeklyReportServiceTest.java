@@ -99,6 +99,22 @@ class WeeklyReportServiceTest extends IntegrationTest {
     }
 
     @Test
+    void backDatedStartDate_includesItemInPastWeeksPlan() throws Exception {
+        Cookie cookie = login("a@example.com");
+        long voc = newItem(cookie, "{\"title\":\"VOC\"}"); // 오늘(2026-11-04)에 등록
+        mvc.perform(patch("/api/work-items/" + voc).cookie(cookie).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"startedAt\":\"2026-10-01\"}"))
+                .andExpect(status().isOk());
+
+        mvc.perform(get("/api/reports/weekly?monday=2026-10-26").cookie(cookie))
+                .andExpect(jsonPath("$.todo.length()").value(1))
+                .andExpect(jsonPath("$.todo[0].title").value("VOC"))
+                .andExpect(jsonPath("$.next.length()").value(1));
+        mvc.perform(get("/api/reports/weekly?monday=2026-09-21").cookie(cookie)) // 시작일(10/1) 이전 주
+                .andExpect(jsonPath("$.todo.length()").value(0));
+    }
+
+    @Test
     void recurringHiddenFromPlan_onlyInAchieved() throws Exception {
         Cookie cookie = login("a@example.com");
         saveDay(cookie, "2026-11-02", day(null, itemId("회의"), 1, "주간회의"));

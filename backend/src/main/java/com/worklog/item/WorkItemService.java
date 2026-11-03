@@ -82,6 +82,10 @@ public class WorkItemService {
             item.setStartedAt(cmd.startedAt());
         }
         if (cmd.completedAt() != null) {
+            if (item.getStatus() != WorkItemStatus.DONE) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_COMPLETED_AT",
+                        "완료일은 완료된 항목에만 지정할 수 있습니다.");
+            }
             item.setCompletedAt(cmd.completedAt());
         }
         return toResponse(item, totals(List.of(item)).get(item.getId()));

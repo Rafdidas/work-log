@@ -43,7 +43,10 @@ docker compose up --build -d
 
 브라우저에서 <http://localhost:8081> 을 열고 가입하면 시작됩니다. 종료는 `docker compose down`(데이터는 볼륨에 남음).
 
-`JWT_SECRET`, `SIGNUP_ENABLED` 환경변수로 비밀키와 회원가입 허용 여부를 바꿀 수 있습니다. **외부에 공개할 때는 `JWT_SECRET`을 반드시 바꾸세요.**
+- 웹(8081)과 DB(5432)는 **내 PC(127.0.0.1)에서만** 접속됩니다. 같은 네트워크의 다른 기기에서는 열리지 않습니다.
+- `JWT_SECRET`을 지정하지 않으면 실행할 때마다 무작위 키를 만들어서, 재시작하면 다시 로그인해야 합니다. 로그인을 유지하려면 32바이트 이상의 값을 지정하세요: `JWT_SECRET=... docker compose up -d`
+- `SIGNUP_ENABLED=false`로 회원가입을 막을 수 있습니다.
+- 외부에 공개할 계획이라면 DB 비밀번호와 쿠키 `Secure` 설정(HTTPS)부터 바꿔야 합니다.
 
 ### 개발 모드
 
@@ -69,8 +72,8 @@ cd frontend && npm install && npm run dev   # http://localhost:5173 (/api는 808
 Docker가 켜져 있어야 합니다(Testcontainers가 Postgres를 띄웁니다).
 
 ```bash
-cd backend && ./gradlew test        # 67개: MD 분배, 일일 저장, 주간 판정, 공수 집계, 인증
-cd frontend && npx vitest run       # 27개: 날짜/MD 유틸, 각 화면 동작
+cd backend && ./gradlew test        # 73개: MD 분배, 일일 저장, 주간 판정, 공수 집계, 인증
+cd frontend && npx vitest run       # 28개: 날짜/MD 유틸, 각 화면 동작
 ```
 
 ## 폴더 구조

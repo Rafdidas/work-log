@@ -117,6 +117,20 @@ describe('ItemsPage', () => {
     })
   })
 
+  it('editForm_showsCompletedDateOnlyForDoneItems', async () => {
+    const user = userEvent.setup()
+    renderAt('/items', '/items', <ItemsPage />)
+
+    await user.click(within(await screen.findByTestId('item-1')).getByRole('button', { name: '수정' }))
+    expect(screen.getByLabelText('시작일')).toBeInTheDocument()
+    expect(screen.queryByLabelText('완료일')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '취소' }))
+
+    await user.click(screen.getByRole('button', { name: /완료 \(1\)/ }))
+    await user.click(within(screen.getByTestId('item-3')).getByRole('button', { name: '수정' }))
+    expect(screen.getByLabelText('완료일')).toHaveValue('2026-10-30')
+  })
+
   it('completeButton_changesStatus', async () => {
     const user = userEvent.setup()
     renderAt('/items', '/items', <ItemsPage />)

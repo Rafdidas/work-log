@@ -55,7 +55,7 @@ public class WeeklyReportService {
         List<WorkItem> all = items.findByUserIdOrderBySortOrderAscIdAsc(userId);
 
         // 계획 섹션: 그 주 금요일까지 만들어졌고 "계획 섹션에 표시"가 켜진 항목만
-        Predicate<WorkItem> planned = i -> i.isShowInPlan() && !createdDate(i).isAfter(friday);
+        Predicate<WorkItem> planned = i -> i.isShowInPlan() && !effectiveStart(i).isAfter(friday);
         List<PlanItem> todo = all.stream()
                 .filter(planned.and(i -> i.getCompletedAt() == null || !i.getCompletedAt().isBefore(monday)))
                 .map(WeeklyReportService::plan).toList();
@@ -90,8 +90,11 @@ public class WeeklyReportService {
         return new WeeklyReport(title, todo, achieved, leaves, next, WeeklyReportFormatter.format(draft));
     }
 
-    private static LocalDate createdDate(WorkItem item) {
-        return item.getCreatedAt().atZone(TimeConfig.SEOUL).toLocalDate();
+    /** 항목이 계획에 올라온 날: 등록일과 (소급해서 고친) 시작일 중 이른 날. */
+    private static LocalDate effectiveStart(WorkItem item) {
+        LocalDate created = item.getCreatedAt().atZone(TimeConfig.SEOUL).toLocalDate();
+        LocalDate started = item.getStartedAt();
+        return started != null && started.isBefore(created) ? started : created;
     }
 
     private static PlanItem plan(WorkItem item) {

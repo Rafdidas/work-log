@@ -126,6 +126,29 @@ class WorkItemIntegrationTest extends IntegrationTest {
     }
 
     @Test
+    void update_completedAtOnNonDoneItem_400() throws Exception {
+        Cookie cookie = login("a@example.com");
+        long id = createItem(cookie, "{\"title\":\"VOC\"}");
+
+        mvc.perform(patch("/api/work-items/" + id).cookie(cookie).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"completedAt\":\"2026-11-10\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_COMPLETED_AT"));
+    }
+
+    @Test
+    void update_completedAtOnDoneItem_changesIt() throws Exception {
+        Cookie cookie = login("a@example.com");
+        long id = createItem(cookie, "{\"title\":\"VOC\"}");
+        setStatus(cookie, id, "DONE");
+
+        mvc.perform(patch("/api/work-items/" + id).cookie(cookie).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"completedAt\":\"2026-11-03\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.completedAt").value("2026-11-03"));
+    }
+
+    @Test
     void delete_withoutEntries_204() throws Exception {
         Cookie cookie = login("a@example.com");
         long id = createItem(cookie, "{\"title\":\"VOC\"}");
