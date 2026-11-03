@@ -1,6 +1,7 @@
 package com.worklog;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.Clock;
@@ -21,6 +22,8 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.containers.PostgreSQLContainer;
+
+import com.jayway.jsonpath.JsonPath;
 
 import jakarta.servlet.http.Cookie;
 
@@ -93,5 +96,25 @@ public abstract class IntegrationTest {
         return mvc.perform(post("/api/auth/signup").contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getCookie("WL_TOKEN");
+    }
+
+    /** 업무 항목을 만들고 id를 돌려준다. */
+    protected long newItem(Cookie cookie, String json) throws Exception {
+        String body = mvc.perform(post("/api/work-items").cookie(cookie)
+                        .contentType(MediaType.APPLICATION_JSON).content(json))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return ((Number) JsonPath.read(body, "$.id")).longValue();
+    }
+
+    /** 제목으로 항목 id를 찾는다(가입 시 만들어지는 "회의", "기타" 용). */
+    protected long itemId(String title) {
+        return jdbc.queryForObject("select id from work_items where title = ?", Long.class, title);
+    }
+
+    /** 체크인 저장(PUT /api/days/{date}) 후 200을 기대한다. */
+    protected void saveDay(Cookie cookie, String date, String json) throws Exception {
+        mvc.perform(put("/api/days/" + date).cookie(cookie).contentType(MediaType.APPLICATION_JSON).content(json))
+                .andExpect(status().isOk());
     }
 }
