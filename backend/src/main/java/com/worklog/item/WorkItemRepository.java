@@ -21,6 +21,8 @@ public interface WorkItemRepository extends JpaRepository<WorkItem, Long> {
 
     Optional<WorkItem> findByIdAndUserId(Long id, Long userId);
 
+    List<WorkItem> findByUserIdAndTag(Long userId, String tag);
+
     @Query("select max(w.sortOrder) from WorkItem w where w.userId = :userId and w.recurring = :recurring")
     Integer maxSortOrder(@Param("userId") Long userId, @Param("recurring") boolean recurring);
 
