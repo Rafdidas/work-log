@@ -94,11 +94,26 @@ export interface AchievedItem {
   memos: { day: Weekday; memo: string }[]
 }
 
+export interface DayEntry {
+  itemId: number
+  title: string
+  md: number
+  memo: string | null
+  completed: boolean
+}
+
+export interface DayGroup {
+  date: string
+  leave: DayType | null
+  entries: DayEntry[]
+}
+
 export interface WeeklyReport {
   title: string
   todo: PlanItem[]
   achieved: AchievedItem[]
   leaves: { date: string; type: DayType }[]
+  byDay: DayGroup[]
   next: PlanItem[]
   text: string
 }

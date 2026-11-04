@@ -18,9 +18,16 @@ const TEXT = `2026-11-02 ~ 2026-11-06 개발1팀
 - VOC 홈페이지
 
 [실제 달성한 일]
-- VOC 홈페이지 (월·화 / 1.50MD)
-  · 월: 회원가입
-- 11/5(목) 오후 반차
+월(11/2)
+- VOC 홈페이지 (1.00MD)
+  회원가입
+화(11/3)
+- VOC 홈페이지 (0.50MD)
+수(11/4)
+- 없음
+목(11/5) 오후 반차
+금(11/6)
+- 없음
 
 [차주 업무]
 - VOC 홈페이지`
@@ -39,6 +46,13 @@ const REPORT: WeeklyReport = {
     },
   ],
   leaves: [{ date: '2026-11-05', type: 'HALF_PM' }],
+  byDay: [
+    { date: '2026-11-02', leave: null, entries: [{ itemId: 1, title: 'VOC 홈페이지', md: 1, memo: '회원가입', completed: false }] },
+    { date: '2026-11-03', leave: null, entries: [{ itemId: 1, title: 'VOC 홈페이지', md: 0.5, memo: null, completed: false }] },
+    { date: '2026-11-04', leave: null, entries: [] },
+    { date: '2026-11-05', leave: 'HALF_PM', entries: [] },
+    { date: '2026-11-06', leave: null, entries: [] },
+  ],
   next: [{ itemId: 1, title: 'VOC 홈페이지', tag: null }],
   text: TEXT,
 }
@@ -55,9 +69,12 @@ describe('WeeklyPage', () => {
     expect(await screen.findByRole('heading', { name: '해야 할 일' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: '실제 달성한 일' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: '차주 업무' })).toBeInTheDocument()
-    expect(screen.getByText('월·화 / 1.50MD')).toBeInTheDocument()
+    for (const dow of ['월', '화', '수', '목', '금']) expect(screen.getByText(dow)).toBeInTheDocument()
+    expect(screen.getByText('11/2')).toBeInTheDocument()
+    expect(screen.getByText('1.00MD')).toBeInTheDocument()
+    expect(screen.getByText('0.50MD')).toBeInTheDocument()
     expect(screen.getByText('회원가입')).toBeInTheDocument()
-    expect(screen.getByText('11/5(목) 오후 반차')).toBeInTheDocument()
+    expect(screen.getByText('오후 반차')).toBeInTheDocument()
   })
 
   it('copyAll_writesServerText', async () => {

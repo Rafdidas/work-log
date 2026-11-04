@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
@@ -24,6 +26,8 @@ import com.worklog.day.DayType;
 import com.worklog.item.WorkItem;
 import com.worklog.item.WorkItemRepository;
 import com.worklog.report.WeeklyReport.AchievedItem;
+import com.worklog.report.WeeklyReport.DayEntry;
+import com.worklog.report.WeeklyReport.DayGroup;
 import com.worklog.report.WeeklyReport.DayMemo;
 import com.worklog.report.WeeklyReport.LeaveLine;
 import com.worklog.report.WeeklyReport.PlanItem;
@@ -66,6 +70,7 @@ public class WeeklyReportService {
         Map<Long, List<EntryRow>> rowsByItem = queries.findRows(userId, monday, friday).stream()
                 .collect(Collectors.groupingBy(EntryRow::itemId));
         List<AchievedItem> achieved = new ArrayList<>();
+        Map<LocalDate, List<DayEntry>> entriesByDate = new HashMap<>();
         for (WorkItem item : all) {
             List<EntryRow> rows = rowsByItem.getOrDefault(item.getId(), List.of());
             BigDecimal total = rows.stream().map(EntryRow::md).reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -79,15 +84,31 @@ public class WeeklyReportService {
             boolean completed = item.getCompletedAt() != null && !item.getCompletedAt().isBefore(monday)
                     && !item.getCompletedAt().isAfter(friday);
             achieved.add(new AchievedItem(item.getId(), item.getTitle(), days, total.setScale(2), completed, memos));
+
+            List<EntryRow> dayRows = rows.stream()
+                    .filter(r -> r.md().signum() > 0 || (r.memo() != null && !r.memo().isBlank()))
+                    .sorted(Comparator.comparing(EntryRow::date)).toList();
+            for (int i = 0; i < dayRows.size(); i++) {
+                EntryRow r = dayRows.get(i);
+                String memo = r.memo() == null || r.memo().isBlank() ? null : r.memo();
+                boolean last = i == dayRows.size() - 1;
+                entriesByDate.computeIfAbsent(r.date(), d -> new ArrayList<>()).add(new DayEntry(item.getId(),
+                        item.getTitle(), r.md().setScale(2), memo, completed && last));
+            }
         }
 
         List<LeaveLine> leaves = logs.findByUserIdAndDateBetweenOrderByDate(userId, monday, friday).stream()
                 .filter(l -> l.getDayType() != DayType.WORK)
                 .map((DayLog l) -> new LeaveLine(l.getDate(), l.getDayType())).toList();
 
+        Map<LocalDate, DayType> leaveByDate = leaves.stream()
+                .collect(Collectors.toMap(LeaveLine::date, LeaveLine::type));
+        List<DayGroup> byDay = monday.datesUntil(friday.plusDays(1))
+                .map(d -> new DayGroup(d, leaveByDate.get(d), entriesByDate.getOrDefault(d, List.of()))).toList();
+
         String title = monday + " ~ " + friday + " " + user.getTeamLabel();
-        WeeklyReport draft = new WeeklyReport(title, todo, achieved, leaves, next, "");
-        return new WeeklyReport(title, todo, achieved, leaves, next, WeeklyReportFormatter.format(draft));
+        WeeklyReport draft = new WeeklyReport(title, todo, achieved, leaves, byDay, next, "");
+        return new WeeklyReport(title, todo, achieved, leaves, byDay, next, WeeklyReportFormatter.format(draft));
     }
 
     /** 항목이 계획에 올라온 날: 등록일과 (소급해서 고친) 시작일 중 이른 날. */

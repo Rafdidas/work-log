@@ -11,37 +11,37 @@ import org.junit.jupiter.api.Test;
 
 import com.worklog.day.DayType;
 import com.worklog.report.WeeklyReport.AchievedItem;
-import com.worklog.report.WeeklyReport.DayMemo;
+import com.worklog.report.WeeklyReport.DayEntry;
+import com.worklog.report.WeeklyReport.DayGroup;
 import com.worklog.report.WeeklyReport.LeaveLine;
 import com.worklog.report.WeeklyReport.PlanItem;
 
 class WeeklyReportFormatterTest {
 
     private static final String TITLE = "2026-10-26 ~ 2026-10-30 개발1팀";
+    private static final LocalDate MON = LocalDate.of(2026, 10, 26);
 
-    private static WeeklyReport report(List<PlanItem> todo, List<AchievedItem> achieved, List<LeaveLine> leaves,
-            List<PlanItem> next) {
-        return new WeeklyReport(TITLE, todo, achieved, leaves, next, "");
+    private static DayGroup day(int offset, DayType leave, DayEntry... entries) {
+        return new DayGroup(MON.plusDays(offset), leave, List.of(entries));
+    }
+
+    private static AchievedItem anyAchieved() {
+        return new AchievedItem(1, "x", List.of(DayOfWeek.MONDAY), BigDecimal.ONE, false, List.of());
     }
 
     @Test
-    void format_matchesSpecExample() {
+    void format_groupsAchievedByWeekday() {
         PlanItem voc = new PlanItem(1, "위시드 VOC 홈페이지", null);
-        WeeklyReport report = report(
-                List.of(voc),
-                List.of(
-                        new AchievedItem(1, "위시드 VOC 홈페이지",
-                                List.of(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY),
-                                new BigDecimal("1.50"), false,
-                                List.of(new DayMemo(DayOfWeek.MONDAY, "회원가입\n휴대전화인증"))),
-                        new AchievedItem(2, "ADS AI 질의 메뉴", List.of(DayOfWeek.THURSDAY, DayOfWeek.FRIDAY),
-                                new BigDecimal("1.20"), true, List.of()),
-                        new AchievedItem(3, "회의",
-                                List.of(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY,
-                                        DayOfWeek.THURSDAY, DayOfWeek.FRIDAY),
-                                new BigDecimal("0.80"), false, List.of())),
-                List.of(new LeaveLine(LocalDate.of(2026, 10, 30), DayType.HALF_PM)),
-                List.of(voc));
+        List<DayGroup> byDay = List.of(
+                day(0, null,
+                        new DayEntry(1, "위시드 VOC 홈페이지", new BigDecimal("0.50"), "회원가입\n  휴대전화인증\n", false),
+                        new DayEntry(3, "회의", new BigDecimal("0.20"), null, false)),
+                day(1, null),
+                day(2, DayType.ANNUAL),
+                day(3, null, new DayEntry(2, "ADS AI 질의 메뉴", new BigDecimal("1.00"), null, true)),
+                day(4, DayType.HALF_PM, new DayEntry(3, "회의", new BigDecimal("0.5"), null, false)));
+        WeeklyReport report = new WeeklyReport(TITLE, List.of(voc), List.of(anyAchieved()),
+                List.of(new LeaveLine(MON.plusDays(2), DayType.ANNUAL)), byDay, List.of(voc), "");
 
         assertThat(WeeklyReportFormatter.format(report)).isEqualTo("""
                 2026-10-26 ~ 2026-10-30 개발1팀
@@ -50,30 +50,29 @@ class WeeklyReportFormatterTest {
                 - 위시드 VOC 홈페이지
 
                 [실제 달성한 일]
-                - 위시드 VOC 홈페이지 (월·화·수 / 1.50MD)
-                  · 월: 회원가입, 휴대전화인증
-                - ADS AI 질의 메뉴 (완료) (목·금 / 1.20MD)
-                - 회의 (월~금 / 0.80MD)
-                - 10/30(금) 오후 반차
+                월(10/26)
+                - 위시드 VOC 홈페이지 (0.50MD)
+                  회원가입
+                  휴대전화인증
+                - 회의 (0.20MD)
+                화(10/27)
+                - 없음
+                수(10/28) 연차
+                목(10/29)
+                - ADS AI 질의 메뉴 (1.00MD) (완료)
+                금(10/30) 오후 반차
+                - 회의 (0.50MD)
 
                 [차주 업무]
                 - 위시드 VOC 홈페이지""");
     }
 
     @Test
-    void format_allFiveDays_showsRange() {
-        AchievedItem meeting = new AchievedItem(1, "회의",
-                List.of(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY,
-                        DayOfWeek.FRIDAY),
-                new BigDecimal("2.7"), false, List.of());
-
-        assertThat(WeeklyReportFormatter.format(report(List.of(), List.of(meeting), List.of(), List.of())))
-                .contains("- 회의 (월~금 / 2.70MD)");
-    }
-
-    @Test
     void format_emptySections_showNone() {
-        assertThat(WeeklyReportFormatter.format(report(List.of(), List.of(), List.of(), List.of()))).isEqualTo("""
+        List<DayGroup> byDay = List.of(day(0, null), day(1, null), day(2, null), day(3, null), day(4, null));
+        WeeklyReport report = new WeeklyReport(TITLE, List.of(), List.of(), List.of(), byDay, List.of(), "");
+
+        assertThat(WeeklyReportFormatter.format(report)).isEqualTo("""
                 2026-10-26 ~ 2026-10-30 개발1팀
 
                 [해야 할 일]
@@ -87,10 +86,12 @@ class WeeklyReportFormatterTest {
     }
 
     @Test
-    void format_leaveOnlyWeek_listsLeaveInsteadOfNone() {
-        WeeklyReport report = report(List.of(), List.of(),
-                List.of(new LeaveLine(LocalDate.of(2026, 10, 27), DayType.ANNUAL)), List.of());
+    void format_leaveOnlyWeek_showsDays() {
+        List<DayGroup> byDay = List.of(day(0, null), day(1, DayType.ANNUAL), day(2, null), day(3, null),
+                day(4, null));
+        WeeklyReport report = new WeeklyReport(TITLE, List.of(), List.of(),
+                List.of(new LeaveLine(MON.plusDays(1), DayType.ANNUAL)), byDay, List.of(), "");
 
-        assertThat(WeeklyReportFormatter.format(report)).contains("[실제 달성한 일]\n- 10/27(화) 연차\n");
+        assertThat(WeeklyReportFormatter.format(report)).contains("월(10/26)\n- 없음\n화(10/27) 연차\n수(10/28)\n");
     }
 }

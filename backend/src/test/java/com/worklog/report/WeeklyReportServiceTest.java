@@ -59,6 +59,10 @@ class WeeklyReportServiceTest extends IntegrationTest {
                 .andExpect(jsonPath("$.todo[0].title").value("VOC"))
                 .andExpect(jsonPath("$.achieved[0].title").value("VOC"))
                 .andExpect(jsonPath("$.achieved[0].completed").value(true))
+                .andExpect(jsonPath("$.byDay.length()").value(5))
+                .andExpect(jsonPath("$.byDay[1].date").value("2026-11-03"))
+                .andExpect(jsonPath("$.byDay[1].entries[0].title").value("VOC"))
+                .andExpect(jsonPath("$.byDay[1].entries[0].completed").value(true))
                 .andExpect(jsonPath("$.next.length()").value(0));
     }
 
@@ -167,7 +171,7 @@ class WeeklyReportServiceTest extends IntegrationTest {
                 .andExpect(jsonPath("$.leaves.length()").value(1))
                 .andExpect(jsonPath("$.leaves[0].date").value("2026-11-05"))
                 .andExpect(jsonPath("$.leaves[0].type").value("HALF_PM"))
-                .andExpect(jsonPath("$.text").value(org.hamcrest.Matchers.containsString("- 11/5(목) 오후 반차")));
+                .andExpect(jsonPath("$.text").value(org.hamcrest.Matchers.containsString("목(11/5) 오후 반차")));
     }
 
     @Test
@@ -184,8 +188,17 @@ class WeeklyReportServiceTest extends IntegrationTest {
                         - VOC
 
                         [실제 달성한 일]
-                        - VOC (월 / 1.00MD)
-                          · 월: 회원가입
+                        월(11/2)
+                        - VOC (1.00MD)
+                          회원가입
+                        화(11/3)
+                        - 없음
+                        수(11/4)
+                        - 없음
+                        목(11/5)
+                        - 없음
+                        금(11/6)
+                        - 없음
 
                         [차주 업무]
                         - VOC"""));

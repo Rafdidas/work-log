@@ -3,7 +3,7 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { DAY_TYPE_LABEL, type WeeklyReport } from '../../api/types'
 import { Card } from '../../components/Card'
 import { CopyButton } from '../../components/CopyButton'
-import { formatDays, weekdayEnumKo, addWeeks, mondayOf, todaySeoul } from '../../lib/week'
+import { weekdayKo, addWeeks, mondayOf, todaySeoul } from '../../lib/week'
 import { formatMd } from '../../lib/md'
 import { sectionBody } from '../../lib/reportText'
 import { useWeekly } from './useWeekly'
@@ -24,10 +24,9 @@ function Empty() {
   return <p className="text-[13px] text-mute">없음</p>
 }
 
-function leaveLine(date: string, type: keyof typeof DAY_TYPE_LABEL) {
+function monthSlashDay(date: string) {
   const [, m, d] = date.split('-').map(Number)
-  const dow = ['일', '월', '화', '수', '목', '금', '토'][new Date(`${date}T00:00:00Z`).getUTCDay()]
-  return `${m}/${d}(${dow}) ${DAY_TYPE_LABEL[type]}`
+  return `${m}/${d}`
 }
 
 function PlanList({ items }: { items: WeeklyReport['todo'] }) {
@@ -93,29 +92,27 @@ export function WeeklyPage() {
             {report.achieved.length === 0 && report.leaves.length === 0 ? (
               <Empty />
             ) : (
-              <ul className="space-y-3">
-                {report.achieved.map((a) => (
-                  <li key={a.itemId}>
-                    <div className="flex flex-wrap items-baseline gap-x-2">
-                      <span className="font-semibold">{a.title}</span>
-                      {a.completed && <span className="text-[12px] text-charcoal">(완료)</span>}
-                      <span className="text-[13px] text-charcoal">{`${formatDays(a.days)} / ${formatMd(a.md)}`}</span>
+              <ul className="divide-y divide-line">
+                {report.byDay.map((g) => (
+                  <li key={g.date} className="flex gap-3 py-2.5 first:pt-0 last:pb-0">
+                    <div className="w-12 shrink-0">
+                      <div className="font-semibold">{weekdayKo(g.date)}</div>
+                      <div className="text-[12px] text-mute">{monthSlashDay(g.date)}</div>
                     </div>
-                    {a.memos.length > 0 && (
-                      <ul className="mt-1 space-y-0.5 text-[13px] text-charcoal">
-                        {a.memos.map((m, i) => (
-                          <li key={i} className="flex gap-2">
-                            <span className="w-4 shrink-0 text-mute">{weekdayEnumKo(m.day)}</span>
-                            <span className="whitespace-pre-line">{m.memo}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </li>
-                ))}
-                {report.leaves.map((l) => (
-                  <li key={l.date} className="text-[13px] text-charcoal">
-                    {leaveLine(l.date, l.type)}
+                    <div className="min-w-0 flex-1 space-y-2">
+                      {g.leave && <span className="inline-block rounded bg-ink/5 px-1.5 py-0.5 text-[12px] text-charcoal">{DAY_TYPE_LABEL[g.leave]}</span>}
+                      {g.entries.length === 0 && !g.leave && <Empty />}
+                      {g.entries.map((e) => (
+                        <div key={e.itemId}>
+                          <div className="flex flex-wrap items-baseline gap-x-2">
+                            <span className="font-semibold">{e.title}</span>
+                            <span className="text-[13px] text-charcoal">{formatMd(e.md)}</span>
+                            {e.completed && <span className="text-[12px] text-charcoal">(완료)</span>}
+                          </div>
+                          {e.memo && <p className="mt-0.5 whitespace-pre-line text-[13px] text-charcoal">{e.memo.trim()}</p>}
+                        </div>
+                      ))}
+                    </div>
                   </li>
                 ))}
               </ul>

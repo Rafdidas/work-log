@@ -6,10 +6,9 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
-import com.worklog.report.WeeklyReport.AchievedItem;
-import com.worklog.report.WeeklyReport.LeaveLine;
+import com.worklog.report.WeeklyReport.DayEntry;
+import com.worklog.report.WeeklyReport.DayGroup;
 import com.worklog.report.WeeklyReport.PlanItem;
 
 /** 주간 보고 초안을 회사 보고서에 붙여넣기 좋은 순수 텍스트로 만든다. */
@@ -31,16 +30,22 @@ public final class WeeklyReportFormatter {
         lines.add("[실제 달성한 일]");
         if (report.achieved().isEmpty() && report.leaves().isEmpty()) {
             lines.add(NONE);
-        }
-        for (AchievedItem item : report.achieved()) {
-            lines.add("- " + item.title() + (item.completed() ? " (완료)" : "") + " (" + days(item.days()) + " / "
-                    + md(item.md()) + "MD)");
-            item.memos().forEach(m -> lines.add("  · " + dayName(m.day()) + ": " + oneLine(m.memo())));
-        }
-        for (LeaveLine leave : report.leaves()) {
-            LocalDate d = leave.date();
-            lines.add("- " + d.getMonthValue() + "/" + d.getDayOfMonth() + "(" + dayName(d.getDayOfWeek()) + ") "
-                    + leave.type().label());
+        } else {
+            for (DayGroup group : report.byDay()) {
+                LocalDate d = group.date();
+                lines.add(dayName(d.getDayOfWeek()) + "(" + d.getMonthValue() + "/" + d.getDayOfMonth() + ")"
+                        + (group.leave() != null ? " " + group.leave().label() : ""));
+                if (group.entries().isEmpty() && group.leave() == null) {
+                    lines.add(NONE);
+                }
+                for (DayEntry e : group.entries()) {
+                    lines.add("- " + e.title() + " (" + md(e.md()) + "MD)" + (e.completed() ? " (완료)" : ""));
+                    if (e.memo() != null) {
+                        e.memo().lines().map(String::strip).filter(l -> !l.isEmpty())
+                                .forEach(l -> lines.add("  " + l));
+                    }
+                }
+            }
         }
         lines.add("");
 
@@ -57,12 +62,6 @@ public final class WeeklyReportFormatter {
         items.forEach(i -> lines.add("- " + i.title()));
     }
 
-    private static String days(List<DayOfWeek> days) {
-        if (days.size() == 5) {
-            return "월~금";
-        }
-        return days.stream().map(WeeklyReportFormatter::dayName).collect(Collectors.joining("·"));
-    }
 
     private static String dayName(DayOfWeek day) {
         return switch (day) {
@@ -80,7 +79,4 @@ public final class WeeklyReportFormatter {
         return md.setScale(2, RoundingMode.HALF_UP).toPlainString();
     }
 
-    private static String oneLine(String memo) {
-        return memo.trim().replaceAll("\\s*\\R\\s*", ", ");
-    }
 }
